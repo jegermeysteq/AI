@@ -1,4 +1,4 @@
-﻿"""Core subject logic."""
+"""Core subject logic."""
 
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -6,7 +6,6 @@ from typing import Dict, List, Optional
 
 
 STEP_COST = 1
-WORKSPACE_DIR = "storage"
 
 
 @dataclass
@@ -22,6 +21,7 @@ class Subject:
         initial_value: int = 0,
         history: Optional[List[Dict[str, object]]] = None,
         initial_budget: int = 10,
+        workspace_dir: str = "storage",
     ) -> None:
         if history is None:
             history = []
@@ -30,6 +30,7 @@ class Subject:
             history=list(history),
             budget=initial_budget,
         )
+        self.workspace_dir = workspace_dir
 
     def step(self, input_value: int) -> SubjectState:
         if self.state.budget < STEP_COST:
@@ -77,7 +78,7 @@ class Subject:
             )
             return self.state
 
-        target_path = Path(WORKSPACE_DIR) / rel_path
+        target_path = Path(self.workspace_dir) / rel_path
         target_path.parent.mkdir(parents=True, exist_ok=True)
         data = content.encode("utf-8")
         target_path.write_bytes(data)

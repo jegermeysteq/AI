@@ -11,3 +11,8 @@ subject-demo
 ## Optional
 
 python -m subject.demo
+
+## Tests
+
+python -m pip install -e .
+pytest

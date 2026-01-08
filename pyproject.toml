@@ -13,5 +13,8 @@ dependencies = []
 [project.scripts]
 subject-demo = "subject.demo:main"
 
+[project.optional-dependencies]
+test = ["pytest"]
+
 [tool.setuptools.packages.find]
 where = ["."]
