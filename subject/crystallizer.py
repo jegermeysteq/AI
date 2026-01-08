@@ -6,7 +6,7 @@ import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from subject.core import SubjectState
 
@@ -47,7 +47,17 @@ def crystallize(
         _set_subject_state(subject, history + [event], budget - CRYSTAL_COST)
         return None
 
-    signature = _signature_for_events(new_events)
+    crystal_body = {
+        "version": INDEX_VERSION,
+        "kind": "event_digest",
+        "payload": {
+            "events": new_events,
+            "from_index": from_index,
+            "to_index": from_index + len(new_events) - 1,
+            "event_count": len(new_events),
+        },
+    }
+    signature = _signature_for_crystal(crystal_body)
     rel_dir_clean = _clean_rel_dir(rel_dir, getattr(subject, "workspace_dir", None))
     index_rel_path = _join_rel(rel_dir_clean, "index.json")
     index_path = _workspace_path(subject, index_rel_path)
@@ -70,13 +80,9 @@ def crystallize(
     to_index = from_index + len(new_events) - 1
     crystal_name = f"crystal_{next_index:04d}.json"
     crystal_rel_path = _join_rel(rel_dir_clean, crystal_name)
-    crystal_payload = {
-        "signature": signature,
-        "events": new_events,
-        "from_index": from_index,
-        "to_index": to_index,
-        "event_count": len(new_events),
-    }
+    crystal_payload = dict(crystal_body)
+    crystal_payload["signature"] = signature
+    crystal_payload["created_at"] = _timestamp()
 
     subject.write_artifact(crystal_rel_path, _stable_json(crystal_payload))
     history_after_write = list(subject.state.history)
@@ -154,11 +160,11 @@ def _last_crystal_write_index(history: List[Dict[str, object]]) -> int:
 
 
 def _stable_json(value: Any) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
-def _signature_for_events(events: Iterable[Dict[str, object]]) -> str:
-    normalized = _stable_json(list(events))
+def _signature_for_crystal(crystal: Dict[str, Any]) -> str:
+    normalized = _stable_json(crystal)
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 

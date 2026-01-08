@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from subject.core import Subject
-from subject.crystallizer import _signature_for_events, crystallize
+from subject.crystallizer import _signature_for_crystal, crystallize
 
 
 def _make_history(count: int) -> List[Dict[str, object]]:
@@ -56,7 +56,17 @@ def test_crystallize_skip_not_enough_events(tmp_path: Path) -> None:
 
 def test_crystallize_dedupe(tmp_path: Path) -> None:
     history = _make_history(5)
-    signature = _signature_for_events(history)
+    crystal_body = {
+        "version": "0.2",
+        "kind": "event_digest",
+        "payload": {
+            "events": history,
+            "from_index": 0,
+            "to_index": 4,
+            "event_count": 5,
+        },
+    }
+    signature = _signature_for_crystal(crystal_body)
     crystals_dir = tmp_path / "crystals"
     crystals_dir.mkdir()
     index_path = crystals_dir / "index.json"
@@ -121,3 +131,20 @@ def test_crystallize_incremental_skips_without_events(tmp_path: Path) -> None:
     index_payload = json.loads(index_path.read_text(encoding="utf-8"))
     assert index_payload["next_index"] == 1
     assert index_payload["last_event_index"] == 4
+
+
+def test_crystal_signature_consistency(tmp_path: Path) -> None:
+    history = _make_history(3)
+    subject = Subject(history=history, initial_budget=1, workspace_dir=str(tmp_path))
+
+    rel_path = crystallize(subject, rel_dir="crystals", min_new_events=3)
+
+    assert rel_path is not None
+    crystal_path = tmp_path / rel_path
+    index_path = tmp_path / "crystals" / "index.json"
+    crystal_payload = json.loads(crystal_path.read_text(encoding="utf-8"))
+    index_payload = json.loads(index_path.read_text(encoding="utf-8"))
+    event_signature = subject.state.history[-1]["signature"]
+
+    assert crystal_payload["signature"] == index_payload["crystals"][0]["signature"]
+    assert crystal_payload["signature"] == event_signature
