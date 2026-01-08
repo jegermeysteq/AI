@@ -1,5 +1,0 @@
-docs
-scripts
-storage
-subject
-tests

@@ -1,2 +1,0 @@
-[console_scripts]
-subject-demo = subject.demo:main

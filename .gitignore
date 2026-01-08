@@ -1,2 +1,17 @@
-﻿__pycache__/
-*.pyc
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Packaging
+*.egg-info/
+dist/
+build/
+
+# Local artifacts
+storage/*
+!storage/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
