@@ -57,3 +57,24 @@ class Subject:
         new_history = self.state.history + [event]
         self.state = SubjectState(value=new_value, history=new_history, budget=new_budget)
         return self.state
+
+    def snapshot(self) -> SubjectState:
+        return SubjectState(
+            value=self.state.value,
+            history=list(self.state.history),
+            budget=self.state.budget,
+        )
+
+    def rollback(self, snapshot_state: SubjectState) -> SubjectState:
+        event = {
+            "type": "ROLLBACK",
+            "to_value": snapshot_state.value,
+            "to_budget": snapshot_state.budget,
+        }
+        new_history = list(snapshot_state.history) + [event]
+        self.state = SubjectState(
+            value=snapshot_state.value,
+            history=new_history,
+            budget=snapshot_state.budget,
+        )
+        return self.state
